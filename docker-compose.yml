@@ -1,0 +1,5 @@
+services:
+  nats-repro:
+    build: .
+    volumes:
+      - ./index.js:/app/index.js

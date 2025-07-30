@@ -1,0 +1,21 @@
+diff --git a/node_modules/@nats-io/transport-node/lib/node_transport.js b/node_modules/@nats-io/transport-node/lib/node_transport.js
+index 8e7fac0..40e7037 100644
+--- a/node_modules/@nats-io/transport-node/lib/node_transport.js
++++ b/node_modules/@nats-io/transport-node/lib/node_transport.js
+@@ -343,7 +343,17 @@ class NodeTransport {
+         }
+     }
+     discard() {
+-        // ignored - this is not required, as there's no throttling
++		this.done = true;
++		if (this.socket) {
++			try {
++				this.socket.removeAllListeners();
++				this.socket.destroy();
++			} catch {
++				// We tried, just ignore it
++			}
++		}
+     }
+     disconnect() {
+         this._closed(undefined, true).then().catch();

@@ -6,14 +6,14 @@ This project reproduces connection thrashing and message duplication under and a
 
 ### Prerequisites
 - Node.js 20+ 
-- Docker and Docker Compose (optional, for containerized execution)
-- npm or yarn package manager
+- Docker and Docker Compose
+- npm
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/mja00/nats-repro
    cd nats-repro
    ```
 
@@ -22,60 +22,33 @@ This project reproduces connection thrashing and message duplication under and a
    npm install
    ```
 
+3. **Install Pumba**  
+   Pumba is used to simulate packet loss and latency.
+   Install it from [here](https://github.com/alexei-led/pumba) for your platform.
+
 ## Running the Application
 
-### Option 1: Local Development
-```bash
-npm start
-```
-
-### Option 2: Docker (Recommended for consistent environment)
 ```bash
 docker-compose up --build
 ```
+The container will run and a log will appear every second with the current time.
 
-### Option 3: Direct Node execution
+## Simulating Packet Loss
+
 ```bash
-node index.js
+pumba -l info netem --duration 5m loss -p 75
 ```
+This will simulate 75% packet loss for 5 minutes.
 
-## What the Application Does
+You will observe the following during the simulation:
+- Messages will no longer be received after the loss starts
+- Logs about disconnects and reconnects will appear
 
-The application:
-1. Connects to the NATS demo server (`demo.nats.io`)
-2. Creates a unique subject using `nuid.next()`
-3. Subscribes to that subject
-4. Publishes a message every second with the current timestamp
-5. Logs received messages with timestamps
-6. Handles connection status changes (disconnect/reconnect)
+You will observe the following after the simulation:
+- Connections will reconnect
+- You'll see multiple message logs received for a single publish
 
-## Configuration
+Enabling debug logging will show that there are multiple transports logging messages and passing them to the protocol.
 
-The application connects to `demo.nats.io` with the following settings:
-- `maxReconnectAttempts: -1` (unlimited reconnection attempts)
-- `timeout: 10000` (10 second timeout)
-- `pingInterval: 10000` (10 second ping interval)
-- `maxPingOut: 2` (maximum ping outs before considering connection lost)
 
-## Stopping the Application
-
-Press `Ctrl+C` to gracefully stop the application. The app will:
-1. Clear the publishing timer
-2. Drain the NATS connection
-3. Exit cleanly
-
-## Troubleshooting
-
-- Ensure you have internet connectivity to reach `demo.nats.io`
-- Check that Node.js version 20+ is installed
-- For Docker issues, ensure Docker and Docker Compose are properly installed
-- The application will automatically reconnect if the connection is lost
-
-## Expected Behavior
-
-Under normal conditions, you should see:
-- Connection status messages
-- Regular message publishing logs
-- Received message logs with timestamps
-
-The bug reproduction focuses on connection thrashing and message duplication scenarios that may occur during network instability or packet loss.
+I've included a patch file with a potential solution to the issue. This appears to work fine, however I'm unsure if this is the best solution. It's been running in a production environment for a week with this patch and I've seen no adverse effects.
